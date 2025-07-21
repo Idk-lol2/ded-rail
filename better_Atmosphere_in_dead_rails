@@ -1,0 +1,202 @@
+local Lighting = game:GetService("Lighting")
+
+-- Create a custom Atmosphere with a different name
+local function setupAtmosphere()
+    -- Remove the default Atmosphere if it exists
+    local defaultAtmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+    if defaultAtmosphere then
+        defaultAtmosphere:Destroy()
+    end
+
+    -- Create custom one
+    local atmosphere = Instance.new("Atmosphere")
+    atmosphere.Name = "SecureAtmosphere" -- non-standard name
+    atmosphere.Parent = Lighting
+    return atmosphere
+end
+
+local atmosphere = setupAtmosphere()
+
+-- Set values
+local fixedColor = Color3.fromRGB(178, 135, 2)
+local targetDensity = 0.5
+local haze = 3
+local glare = 0
+
+-- Constantly restore values in case of interference
+task.spawn(function()
+    while true do
+        atmosphere.Color = fixedColor
+        atmosphere.Decay = fixedColor
+        atmosphere.Density = targetDensity
+        atmosphere.Haze = haze
+        atmosphere.Glare = glare
+        task.wait(5)
+    end
+end)
+
+
+local Lighting = game:GetService("Lighting")
+
+-- Lighting settings
+Lighting.Ambient = Color3.fromRGB(255, 244, 204) -- Soft warm light
+Lighting.OutdoorAmbient = Color3.fromRGB(255, 229, 153)
+Lighting.Brightness = 2
+Lighting.ClockTime = 14 -- Bright daylight
+Lighting.FogColor = Color3.fromRGB(255, 223, 127)
+Lighting.FogStart = 100
+Lighting.FogEnd = 1000
+Lighting.EnvironmentDiffuseScale = 0.5
+Lighting.EnvironmentSpecularScale = 0.3
+Lighting.ExposureCompensation = 0.1
+Lighting.GlobalShadows = true
+Lighting.ShadowSoftness = 0.25
+
+-- Color correction for dusty effect
+local colorCorrection = Instance.new("ColorCorrectionEffect")
+colorCorrection.Name = "DesertColor"
+colorCorrection.Brightness = -0.05
+colorCorrection.Contrast = 0.1
+colorCorrection.Saturation = -0.2
+colorCorrection.TintColor = Color3.fromRGB(242, 217, 132)
+colorCorrection.Parent = Lighting
+
+-- Bloom effect for sun glare
+local bloom = Instance.new("BloomEffect")
+bloom.Name = "DesertBloom"
+bloom.Intensity = 0.3
+bloom.Size = 24
+bloom.Threshold = 1
+bloom.Parent = Lighting
+
+-- Create new Sound
+local sound = Instance.new("Sound")
+sound.Name = "DesertLoop"
+sound.SoundId = "rbxassetid://5799870105"
+sound.Volume = 0.7
+sound.Looped = true
+print("sound work")
+sound.Playing = true
+
+-- Parent — Workspace
+sound.Parent = workspace
+
+-- Paths to local GitHub music files
+local localHorrorPath = "ChillGuyScripts/Assets/dedrail/horror.mp3"
+local localFinalePath = "ChillGuyScripts/Assets/dedrail/finale.mp3"
+
+local horrorURL = "https://github.com/Idk-lol2/ded-rail/raw/refs/heads/main/horror.mp3"
+local finaleURL = "https://github.com/Idk-lol2/ded-rail/raw/refs/heads/main/ROBLOX%20Music%20-%20Zero%20Project%20-%20Gothic%20(1).mp3"
+
+-- Function to create necessary folders
+local function createFolders()
+    if not isfolder("ChillGuyScripts") then makefolder("ChillGuyScripts") end
+    if not isfolder("ChillGuyScripts/Assets") then makefolder("ChillGuyScripts/Assets") end
+    if not isfolder("ChillGuyScripts/Assets/dedrail") then makefolder("ChillGuyScripts/Assets/dedrail") end
+end
+
+-- Function to download and save music
+local function downloadMusic(url, path)
+    if not isfile(path) then
+        local success, response = pcall(function()
+            return game:HttpGet(url)
+        end)
+        if success and response then
+            writefile(path, response)
+            print("Music successfully downloaded and saved at path: " .. path)
+        else
+            error("Error downloading music: " .. tostring(response))
+        end
+    else
+        print("Music already exists at path: " .. path)
+    end
+end
+
+-- Function to create sound
+local function createSound(id)
+    local sound = Instance.new("Sound")
+    sound.SoundId = id
+    sound.Volume = 0.6
+    sound.Looped = false
+    return sound
+end
+
+-- Download necessary files
+createFolders()
+downloadMusic(horrorURL, localHorrorPath)
+downloadMusic(finaleURL, localFinalePath)
+
+-- Replace existing sound named "Finale" once
+local function replaceFinaleSound()
+    for _, descendant in pairs(game:GetDescendants()) do
+        if descendant:IsA("Sound") and descendant.Name == "Finale" then
+            if getcustomasset then
+                descendant.SoundId = getcustomasset(localFinalePath)
+                print("Finale sound replaced with local file")
+            else
+                warn("getcustomasset is not supported — could not replace Finale")
+            end
+        end
+    end
+end
+
+replaceFinaleSound() -- Only once at startup
+
+-- Table with sound IDs
+local soundIds = {
+    "rbxassetid://82639930819609",
+    "rbxassetid://126080775093346"
+}
+
+if getcustomasset then
+    table.insert(soundIds, getcustomasset(localHorrorPath))
+else
+    warn("getcustomasset is not supported — local sound will not play")
+end
+
+-- Main loop to play sounds
+while true do
+    task.wait(100)
+
+    local id = soundIds[math.random(1, #soundIds)]
+    local sound = createSound(id)
+    sound.Parent = workspace
+
+    if id ~= getcustomasset(localHorrorPath) then
+        local speed = ({0.09, 0.1, 0.15})[math.random(1, 3)]
+        sound.PlaybackSpeed = speed
+        print("Played: " .. id .. " | Speed: " .. speed)
+    else
+        print("Played GitHub sound: " .. id .. " | Standard speed")
+    end
+
+    sound:Play()
+    sound.Ended:Connect(function()
+        sound:Destroy()
+    end)
+end
+
+-- Fog setup via Atmosphere
+local Lighting = game:GetService("Lighting")
+
+-- Check if Atmosphere exists, if not — create
+local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+if not atmosphere then
+    atmosphere = Instance.new("Atmosphere")
+    atmosphere.Parent = Lighting
+end
+
+-- Colored fog setup
+atmosphere.Color = Color3.fromRGB(178, 135, 2)
+atmosphere.Decay = Color3.fromRGB(178, 135, 2)
+atmosphere.Glare = 0
+atmosphere.Haze = 0
+atmosphere.Density = 0
+
+-- Gradually increase fog density
+task.spawn(function()
+    while atmosphere.Density < 0.75 do
+        atmosphere.Density += 0.01
+        task.wait(0.1)
+    end
+end)
